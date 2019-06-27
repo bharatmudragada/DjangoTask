@@ -169,6 +169,11 @@ def get_reactions_to_post(post_id):
         postReactionData.append(reactionData)
     return postReactionData
 
+
 def get_reaction_metrics(post_id):
     post = Post.objects.get(pk=post_id)
     return reactions_count(post)
+
+
+def get_total_reaction_count():
+    return PostLikes.objects.count()
