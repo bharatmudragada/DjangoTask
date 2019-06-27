@@ -177,3 +177,27 @@ def get_reaction_metrics(post_id):
 
 def get_total_reaction_count():
     return PostLikes.objects.count()
+
+
+def getReplyData(com):
+    commentData = {}
+    commentData["comment_id"] = com.pk
+    commenter = {"user_id": com.userId.pk, "name": com.userId.userName, "profile_pic_url": com.userId.userPhoto}
+    commentData["commenter"] = commenter
+    commentData["commented_at"] = str(com.commentedTime)
+    commentData["comment_content"] = com.commentText
+    return commentData
+
+
+def get_replies_for_comment(comment_id):
+    comment = Comment.objects.get(pk=comment_id)
+    replyToComment = Comment.objects.filter(replyId=comment)
+    replyData = []
+    for reply in replyToComment:
+        replyData.append(getReplyData(reply))
+    return replyData
+
+
+def delete_post(post_id):
+    post = Post.objects.get(pk=post_id)
+    post.delete()
