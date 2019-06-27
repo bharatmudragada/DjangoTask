@@ -7,6 +7,7 @@ Reactions = (
     ('Lo', 'Love'),
     ('Ha', 'Haha'),
     ('Wo', 'Wow'),
+    ('Sa', 'Sad'),
     ('An', 'Angry')
 )
 
