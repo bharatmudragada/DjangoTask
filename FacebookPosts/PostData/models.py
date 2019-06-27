@@ -26,7 +26,7 @@ class Post(models.Model):
     postedTime = models.DateTimeField()
 
     def __str__(self):
-        return self.postBody
+        return str(self.pk) + ", " + str(self.userId) + ", " + self.postBody
 
 
 class PostLikes(models.Model):
@@ -35,7 +35,7 @@ class PostLikes(models.Model):
     reactionType = models.CharField(max_length=2, choices=Reactions)
 
     def __str__(self):
-        return self.reactionType
+        return str(self.postId.postBody) + ", " + str(self.likeUserId) + ", " + self.reactionType
 
 
 class Comment(models.Model):
@@ -46,7 +46,10 @@ class Comment(models.Model):
     commentedTime = models.DateTimeField()
 
     def __str__(self):
-        return self.commentText
+        if not self.replyId == None:
+            return str(self.pk) + ", " + str(self.replyId.pk) + ", " + str(self.userId) + ", " + self.commentText
+        else:
+            return str(self.pk) + ", " + str(self.userId) + ", " + self.commentText
 
 
 class CommentLikes(models.Model):
@@ -55,5 +58,5 @@ class CommentLikes(models.Model):
     reactionType = models.CharField(max_length=2, choices=Reactions)
 
     def __str__(self):
-        return self.reactionType
+        return str(self.commentId.commentText) + ", " + str(self.userId) + ", " + self.reactionType
 

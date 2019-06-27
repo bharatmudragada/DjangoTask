@@ -148,7 +148,7 @@ def get_posts_with_more_positive_reactions():
         positive = count['Love'] + count['Like'] + count['Wow'] + count['Haha']
         negative = count['Sad'] + count['Angry']
         if positive > negative:
-            positivePosts.append(get_post_content(post))
+            positivePosts.append(post.pk)
     return positivePosts
 
 
@@ -156,7 +156,7 @@ def get_posts_reacted_by_user(user_id):
     userPosts = PostLikes.objects.filter(likeUserId=user_id)
     userReactedPosts = []
     for post in userPosts:
-        userReactedPosts.append(get_post_content(post.postId))
+        userReactedPosts.append(post.postId.pk)
     return userReactedPosts
 
 
