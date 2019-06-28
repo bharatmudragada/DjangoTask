@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='commentlikes',
+            model_name='CommentReactions',
             name='reactionType',
             field=models.CharField(choices=[('Li', 'Like'), ('Lo', 'Love'), ('Ha', 'Haha'), ('Wo', 'Wow'), ('Sa', 'Sad'), ('An', 'Angry')], max_length=2),
         ),
         migrations.AlterField(
-            model_name='postlikes',
+            model_name='PostReactions',
             name='reactionType',
             field=models.CharField(choices=[('Li', 'Like'), ('Lo', 'Love'), ('Ha', 'Haha'), ('Wo', 'Wow'), ('Sa', 'Sad'), ('An', 'Angry')], max_length=2),
         ),

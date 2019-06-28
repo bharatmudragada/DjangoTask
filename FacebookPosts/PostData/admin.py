@@ -1,11 +1,11 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import User, Post, PostLikes, Comment, CommentLikes
+from .models import User, Post, PostReactions, Comment, CommentReactions
 
 
-class PostLikesInline(admin.StackedInline):
-    model = PostLikes
+class PostReactionsInline(admin.StackedInline):
+    model = PostReactions
     extra = 3
 
 
@@ -14,17 +14,17 @@ class CommentInline(admin.StackedInline):
     extra = 3
 
 
-class CommentLikesInline(admin.StackedInline):
-    model = CommentLikes
+class CommentReactionsInline(admin.StackedInline):
+    model = CommentReactions
     extra = 3
 
 
 class PostAdmin(admin.ModelAdmin):
-    inlines = [PostLikesInline, CommentInline]
+    inlines = [PostReactionsInline, CommentInline]
 
 
 class CommentAdmin(admin.ModelAdmin):
-    inlines = [CommentLikesInline]
+    inlines = [CommentReactionsInline]
 
 
 admin.site.register(User)
@@ -33,6 +33,6 @@ admin.site.register(Post, PostAdmin)
 
 admin.site.register(Comment, CommentAdmin)
 
-admin.site.register(PostLikes)
+admin.site.register(PostReactions)
 
-admin.site.register(CommentLikes)
+admin.site.register(CommentReactions)

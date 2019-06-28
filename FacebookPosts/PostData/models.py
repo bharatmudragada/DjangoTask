@@ -1,15 +1,7 @@
 from django.db import models
+from PostData.constant import Reaction
 
 # Create your models here.
-
-Reactions = (
-    ('Li', 'Like'),
-    ('Lo', 'Love'),
-    ('Ha', 'Haha'),
-    ('Wo', 'Wow'),
-    ('Sa', 'Sad'),
-    ('An', 'Angry')
-)
 
 
 class User(models.Model):
@@ -21,42 +13,48 @@ class User(models.Model):
 
 
 class Post(models.Model):
-    userId = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     postBody = models.CharField(max_length=200)
-    postedTime = models.DateTimeField()
+    postedTime = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return str(self.pk) + ", " + str(self.userId) + ", " + self.postBody
+        return str(self.pk) + ", " + str(self.user) + ", " + self.postBody
 
 
-class PostLikes(models.Model):
-    postId = models.ForeignKey(Post, on_delete=models.CASCADE)
-    likeUserId = models.ForeignKey(User, on_delete=models.CASCADE)
-    reactionType = models.CharField(max_length=2, choices=Reactions)
+class PostReactions(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reactionType = models.CharField(max_length=10, choices=Reaction.get_reactions())
+
+    class Meta:
+        unique_together = ('post', 'user')
 
     def __str__(self):
-        return str(self.postId.postBody) + ", " + str(self.likeUserId) + ", " + self.reactionType
+        return str(self.post.postBody) + ", " + str(self.user) + ", " + self.reactionType
 
 
 class Comment(models.Model):
-    postId = models.ForeignKey(Post, on_delete=models.CASCADE)
-    replyId = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True, default=None)
-    userId = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    commented_on = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True, default=None)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     commentText = models.CharField(max_length=100)
-    commentedTime = models.DateTimeField()
+    commentedTime = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if not self.replyId == None:
-            return str(self.pk) + ", " + str(self.replyId.pk) + ", " + str(self.userId) + ", " + self.commentText
+        if not self.commented_on == None:
+            return str(self.pk) + ", " + str(self.commented_on.pk) + ", " + str(self.user) + ", " + self.commentText
         else:
-            return str(self.pk) + ", " + str(self.userId) + ", " + self.commentText
+            return str(self.pk) + ", " + str(self.user) + ", " + self.commentText
 
 
-class CommentLikes(models.Model):
-    commentId = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    userId = models.ForeignKey(User, on_delete=models.CASCADE)
-    reactionType = models.CharField(max_length=2, choices=Reactions)
+class CommentReactions(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reactionType = models.CharField(max_length=10, choices=Reaction.get_reactions())
+
+    class Meta:
+        unique_together = ('comment', 'user')
 
     def __str__(self):
-        return str(self.commentId.commentText) + ", " + str(self.userId) + ", " + self.reactionType
+        return str(self.comment.commentText) + ", " + str(self.user) + ", " + self.reactionType
 

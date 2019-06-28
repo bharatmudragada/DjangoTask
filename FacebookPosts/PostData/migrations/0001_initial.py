@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='PostLikes',
+            name='PostReactions',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('reactionType', models.CharField(choices=[('Li', 'Like'), ('Lo', 'Love'), ('Ha', 'Haha'), ('Wo', 'Wow'), ('An', 'Angry')], max_length=2)),
@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='PostData.User'),
         ),
         migrations.CreateModel(
-            name='CommentLikes',
+            name='CommentReactions',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('reactionType', models.CharField(choices=[('Li', 'Like'), ('Lo', 'Love'), ('Ha', 'Haha'), ('Wo', 'Wow'), ('An', 'Angry')], max_length=2)),
