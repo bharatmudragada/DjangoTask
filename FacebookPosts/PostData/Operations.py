@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import datetime
 from django.db.models import Count, F, Q
 from django.core.exceptions import SuspiciousOperation
+from django.db.models import Prefetch
 
 
 def getUserData(user):
@@ -17,7 +18,7 @@ def getReactions(reactions):
 
 def getCommentData(comment):
 
-    reactionOfComment = CommentReactions.objects.filter(comment=comment.pk)
+    reactionOfComment = comment.commentreactions_set.all()
     comment_likes_count = reactionOfComment.count()
     comment_reactionTypes = reactionOfComment.values('reactionType').distinct()
 
@@ -30,14 +31,6 @@ def getCommentData(comment):
     commentData["reactions"] = {"count": comment_likes_count, "type": getReactions(comment_reactionTypes)}
 
     return commentData
-
-
-def reactions_count(post):
-    postReactions = PostReactions.objects.filter(post=post).values('reactionType').annotate(reaction_count=Count('reactionType'))
-    reactionData = {}
-    for reaction in postReactions:
-        reactionData[reaction['reactionType']] = reaction['reaction_count']
-    return reactionData
 
 
 def getReplyData(comment):
@@ -53,15 +46,19 @@ def getReplyData(comment):
 def get_post_content(post):
 
     postData = {}
-    commentOfPost = Comment.objects.filter(post=post.pk, commented_on=None)
-    postReactions = PostReactions.objects.filter(post=post.pk)
+
+    commentOfPost = post.comment_set.all()
+    postReactions = post.postreactions_set.all()
+
     count = postReactions.count()
     reactionTypes = getReactions(postReactions.values('reactionType').distinct())
 
+    all_comment_details = commentOfPost.prefetch_related('comment_set', 'commentreactions_set').all()
+
     commentsArray = []
-    for com in commentOfPost:
-        commentData = getCommentData(com)
-        replyOfComment = Comment.objects.filter(commented_on=com.pk)
+    for comment in all_comment_details:
+        commentData = getCommentData(comment)
+        replyOfComment = comment.comment_set.all()
         replysArray = []
         for reply in replyOfComment:
             replyData = getCommentData(reply)
@@ -81,7 +78,7 @@ def get_post_content(post):
 
 
 def get_post(post_id):
-    post = Post.objects.get(pk=post_id)
+    post = Post.objects.prefetch_related(Prefetch('comment_set', queryset=Comment.objects.filter(commented_on=None)), 'postreactions_set').get(pk=post_id)
     return get_post_content(post)
 
 
@@ -98,10 +95,10 @@ def add_comment(post_id, comment_user_id, comment_text):
 
 
 def reply_to_comment(comment_id, reply_user_id, reply_text):
-    comment = Comment.objects.get(pk=comment_id)
-    comment_on_id = comment.commented_on.id
+    comment = Comment.objects.prefetch_related('comment_set').get(pk=comment_id)
+    comment_on_id = comment.commented_on
     if comment_on_id is not None:
-        comment = Comment.objects.get(pk=comment_on_id)
+        comment = comment.comment_set.all()
     reply = Comment(post=comment.post, commented_on=comment, user_id=reply_user_id, commentText=reply_text, commentedTime=datetime.datetime.now())
     reply.save()
     return reply.pk
@@ -150,8 +147,12 @@ def get_reactions_to_post(post_id):
 
 
 def get_reaction_metrics(post_id):
-    post = Post.objects.get(pk=post_id)
-    return reactions_count(post)
+    post = Post.objects.prefetch_related('postreactions_set').get(pk=post_id)
+    postReactions = post.postreactions_set.values('reactionType').annotate(reaction_count=Count('reactionType'))
+    reactionData = {}
+    for reaction in postReactions:
+        reactionData[reaction['reactionType']] = reaction['reaction_count']
+    return reactionData
 
 
 def get_total_reaction_count():
@@ -159,11 +160,11 @@ def get_total_reaction_count():
 
 
 def get_replies_for_comment(comment_id):
-    comment = Comment.objects.get(pk=comment_id)
+    comment = Comment.objects.prefetch_related('comment_set').get(pk=comment_id)
     if comment.commented_on is not None:
         raise SuspiciousOperation('Bad Request')
     else:
-        replyToComment = Comment.objects.filter(commented_on_id=comment_id)
+        replyToComment = comment.comment_set.all()
         replyData = []
         for reply in replyToComment:
             replyData.append(getReplyData(reply))
