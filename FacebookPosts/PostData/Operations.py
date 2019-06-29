@@ -113,17 +113,17 @@ def create_post(user_id, post_content):
 
 
 def add_comment(post_id, comment_user_id, comment_text):
-    comment = Comment(post_id=post_id, commented_on=None, user_id=comment_user_id, commentText=comment_text, commentedTime=datetime.datetime.now())
+    comment = Comment(post_id=post_id, commented_on=None, user_id=comment_user_id, commentText=comment_text)
     comment.save()
     return comment.pk
 
 
 def reply_to_comment(comment_id, reply_user_id, reply_text):
-    comment = Comment.objects.select_related('user', 'post').get(pk=comment_id)
+    comment = Comment.objects.get(pk=comment_id)
     comment_on_id = comment.commented_on
     if comment_on_id is not None:
-        comment = Comment.objects.select_related('user', 'post').get(id=comment.commented_on.id)
-    reply = Comment(post=comment.post, commented_on=comment, user_id=reply_user_id, commentText=reply_text, commentedTime=datetime.datetime.now())
+        comment = Comment.objects.get(id=comment.commented_on.id)
+    reply = Comment(post_id=comment.post_id, commented_on=comment, user_id=reply_user_id, commentText=reply_text)
     reply.save()
     return reply.pk
 
@@ -187,7 +187,7 @@ def get_replies_for_comment(comment_id):
     if comment.commented_on is not None:
         raise SuspiciousOperation('Bad Request')
     else:
-        replyToComment = Comment.objects.select_related('user').filter(commented_on=comment.commented_on)
+        replyToComment = Comment.objects.select_related('user').filter(commented_on=comment_id)
         replyData = []
         for reply in replyToComment:
             replyData.append(getReplyData(reply))
