@@ -1,13 +1,13 @@
 from .models import Post, PostReactions, Comment, CommentReactions
 from django.core.exceptions import ObjectDoesNotExist
 import datetime
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, Subquery
 from django.core.exceptions import SuspiciousOperation
 from django.db.models import Prefetch
 
 
 def getUserData(user):
-    return {"user_id": user.pk, "name": user.userName, "profile_pic_url": user.userPhoto}
+    return {"user_id": user.pk, "name": user.username, "profile_pic_url": user.userPhoto}
 
 
 def getReactions(reactions):
@@ -19,7 +19,7 @@ def getReactions(reactions):
 def getCommentData(comment, commentReactions):
     comment_data = {}
     comment_data["comment_id"] = comment['id']
-    comment_data["commenter"] = {"user_id": comment["user"], "name": comment["user__userName"], "profile_pic_url": comment["user__userPhoto"]}
+    comment_data["commenter"] = {"user_id": comment["user"], "name": comment["user__username"], "profile_pic_url": comment["user__userPhoto"]}
     comment_data["commented_at"] = comment['commentedTime'].strftime('%y-%m-%d %H:%M:%S.%f')
     comment_data["comment_content"] = comment['commentText']
     comment_data["reactions"] = get_reaction_object(commentReactions)
@@ -42,24 +42,20 @@ def get_post_content(post):
 
     postData = {}
 
-    commentOfPost = Comment.objects.select_related('user').filter(post=post, commented_on=None).values('id', 'commented_on', 'user', 'user__userName', 'user__userPhoto', 'commentText', 'commentedTime')
+    commentOfPost = Comment.objects.select_related('user').filter(post=post, commented_on=None).values('id', 'commented_on', 'user', 'user__username', 'user__userPhoto', 'commentText', 'commentedTime')
 
-    comment_ids = []
-    for comment in commentOfPost:
-        comment_ids.append(comment['id'])
-
+    comment_ids = commentOfPost.values('id')
 
     postReactions = PostReactions.objects.filter(post=post).values_list('reactionType', flat=True)
 
-    count = len(postReactions)
-    reactionTypes = list(set(postReactions))
+    count = postReactions.count()
+    reactionTypes = list(postReactions.distinct())
 
-    all_comment_replys = Comment.objects.select_related('user').filter(commented_on__in=comment_ids).values('id', 'commented_on', 'user', 'user__userName', 'user__userPhoto', 'commentText', 'commentedTime')
+    all_comment_replys = Comment.objects.select_related('user').filter(commented_on__in=Subquery(comment_ids)).values('id', 'commented_on', 'user', 'user__username', 'user__userPhoto', 'commentText', 'commentedTime')
 
-    for comment in all_comment_replys:
-        comment_ids.append(comment['id'])
+    all_comment_ids = Comment.objects.filter(post=post).values('id')
 
-    all_reply_reactions = CommentReactions.objects.filter(comment_id__in=comment_ids).values('comment_id', 'reactionType')
+    all_reply_reactions = CommentReactions.objects.filter(comment_id__in=Subquery(all_comment_ids)).values('comment_id', 'reactionType')
 
     comment_replys = {}
     for reply in all_comment_replys:
@@ -78,15 +74,20 @@ def get_post_content(post):
             comment_reactions[reaction['comment_id']] = {"count": 1, "type": set([reaction['reactionType']])}
 
     commentsArray = []
+
     for comment in commentOfPost:
-        comment_data = getCommentData(comment, comment_reactions[comment['id']])
+        if comment['id'] in comment_reactions:
+            comment_data = getCommentData(comment, comment_reactions[comment['id']])
+        else:
+            comment_data = getCommentData(comment, {"count": 0, "type": {}})
         replyArray = []
-        for reply in comment_replys[comment['id']]:
-            try:
-                replyReactions = comment_reactions[reply['id']]
-            except KeyError:
-                replyReactions = {"count": 0, "type": []}
-            replyArray.append(getCommentData(reply, replyReactions))
+        if comment['id'] in comment_replys:
+            for reply in comment_replys[comment['id']]:
+                try:
+                    replyReactions = comment_reactions[reply['id']]
+                except KeyError:
+                    replyReactions = {"count": 0, "type": []}
+                replyArray.append(getCommentData(reply, replyReactions))
         comment_data["replies_count"] = len(replyArray)
         comment_data["replies"] = replyArray
         commentsArray.append(comment_data)
@@ -167,7 +168,7 @@ def get_posts_reacted_by_user(user_id):
 
 
 def get_reactions_to_post(post_id):
-    return list(PostReactions.objects.filter(post_id=post_id).annotate(name=F('user__userName'), profile_pic=F('user__userPhoto'), reaction=F('reactionType')).values('user_id', 'name', 'profile_pic', 'reaction'))
+    return list(PostReactions.objects.filter(post_id=post_id).annotate(name=F('user__username'), profile_pic=F('user__userPhoto'), reaction=F('reactionType')).values('user_id', 'name', 'profile_pic', 'reaction'))
 
 
 def get_reaction_metrics(post_id):

@@ -1,15 +1,15 @@
 from django.db import models
 from PostData.constant import Reaction
+from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 
 
-class User(models.Model):
-    userName = models.CharField(max_length=50)
+class User(AbstractUser):
     userPhoto = models.CharField(max_length=30)
 
     def __str__(self):
-        return self.userName
+        return self.username
 
 
 class Post(models.Model):
