@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'rest_framework',
+    'oauth2_provider',
     'PostData.apps.PostdataConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -125,7 +126,14 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     )
+
+}
+
+OAUTH2_PROVIDER = {
+    'SCOPES': {'read': 'Read scope', 'write': 'Write scope', 'groups': 'Access to your groups'}
 }

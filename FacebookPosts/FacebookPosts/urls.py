@@ -22,4 +22,5 @@ urlpatterns = [
     path('users/', views.user_list),
     path('delete_post/', views.delete_post),
     path('api-auth/', include('rest_framework.urls')),
+    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]

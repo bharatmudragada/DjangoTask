@@ -8,6 +8,8 @@ from .models import *
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, F, Q, Subquery
 from .permisssions import *
+from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope, TokenHasScope
+from oauth2_provider.decorators import protected_resource
 
 
 def get_reaction_object(reaction_dic):
@@ -25,9 +27,13 @@ def getCommentData(comment, commentReactions):
 
 
 @api_view(['GET'])
+@protected_resource(scopes=['read'])
 def get_post(request, post_id):
 
-    post = Post.objects.select_related('user').get(pk=post_id)
+    try:
+        post = Post.objects.select_related('user').get(pk=post_id)
+    except ObjectDoesNotExist:
+        return Response("Post Does Not Exist", status.HTTP_400_BAD_REQUEST)
 
     comments = Comment.objects.select_related('user').filter(post=post, commented_on=None).values('id', 'commented_on', 'user', 'user__username', 'user__userPhoto', 'commentText', 'commentedTime')
 
@@ -84,6 +90,7 @@ def get_post(request, post_id):
 
 
 @api_view(['GET', 'POST'])
+@protected_resource(scopes=['read'])
 def user_list(request):
     if request.method == 'GET':
         users = User.objects.all()
@@ -98,8 +105,7 @@ def user_list(request):
 
 
 @api_view(['POST'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@permission_classes((TokenHasReadWriteScope, ))
 def create_post(request):
     serializer = PostCreateSerializer(data=request.data)
     if serializer.is_valid():
@@ -109,8 +115,7 @@ def create_post(request):
 
 
 @api_view(['POST'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@permission_classes((TokenHasReadWriteScope, ))
 def add_comment(request):
     serializer = AddCommentSerializer(data = request.data)
     if serializer.is_valid():
@@ -120,8 +125,7 @@ def add_comment(request):
 
 
 @api_view(['POST'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@permission_classes((TokenHasReadWriteScope, ))
 def reply_to_comment(request):
     serializer = AddReplySerializer(data=request.data)
     if serializer.is_valid():
@@ -136,8 +140,7 @@ def reply_to_comment(request):
 
 
 @api_view(['POST'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@permission_classes((TokenHasReadWriteScope, ))
 def react_to_post(request):
     serializer = PostReactionSerializer(data=request.data)
     if serializer.is_valid():
@@ -160,8 +163,7 @@ def react_to_post(request):
 
 
 @api_view(['POST'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@permission_classes((TokenHasReadWriteScope, ))
 def react_to_comment(request):
     serializer = CommentReactionSerializer(data=request.data)
     if serializer.is_valid():
@@ -184,8 +186,7 @@ def react_to_comment(request):
 
 
 @api_view(['GET'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@protected_resource(scopes=['read'])
 def get_user_posts(request):
     posts = list(Post.objects.filter(user=request.user).values_list('id', flat=True))
     data = {"post_ids": posts}
@@ -197,6 +198,7 @@ def get_user_posts(request):
 
 
 @api_view(['GET'])
+@protected_resource(scopes=['read'])
 def get_posts_with_more_positive_reactions(request):
     posts = list(Post.objects.values('id').annotate(positiveCount=Count('postreactions__reactionType', filter=Q(postreactions__reactionType__in=['LIKE', 'LOVE', 'HAHA', 'WOW'])), negativeCount=Count('postreactions__reactionType', filter=Q(postreactions__reactionType__in=['SAD', 'ANGRY']))).filter(positiveCount__gt=F('negativeCount')).values_list('id', flat=True))
     data = {"post_ids": posts}
@@ -208,8 +210,7 @@ def get_posts_with_more_positive_reactions(request):
 
 
 @api_view(['GET'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
+@protected_resource(scopes=['read'])
 def get_posts_reacted_by_user(request):
     posts = list(PostReactions.objects.filter(user=request.user).values_list('post_id', flat=True))
     data = {"post_ids": posts}
@@ -221,6 +222,7 @@ def get_posts_reacted_by_user(request):
 
 
 @api_view(['POST'])
+@protected_resource(scopes=['read'])
 def get_reactions_to_post(request):
     serializer = IdSerializer(data=request.data)
     if serializer.is_valid():
@@ -234,8 +236,8 @@ def get_reactions_to_post(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @api_view(['POST'])
+@protected_resource(scopes=['read'])
 def get_reaction_metrics(request):
 
     serializer = IdSerializer(data=request.data)
@@ -251,6 +253,7 @@ def get_reaction_metrics(request):
 
 
 @api_view(['GET'])
+@protected_resource(scopes=['read'])
 def get_total_reaction_count(request):
     count = PostReactions.objects.count()
     data = {"total_count": count}
@@ -262,6 +265,7 @@ def get_total_reaction_count(request):
 
 
 @api_view(['POST'])
+@protected_resource(scopes=['read'])
 def get_replies_for_comment(request):
     serializer = IdSerializer(data=request.data)
     if serializer.is_valid():
@@ -276,9 +280,8 @@ def get_replies_for_comment(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST', 'GET'])
-@authentication_classes((BasicAuthentication, SessionAuthentication))
-@permission_classes((IsOwner,))
+@api_view(['POST'])
+@permission_classes((TokenHasReadWriteScope, IsOwner))
 def delete_post(request):
     serializer = IdSerializer(data=request.data)
     if serializer.is_valid():

@@ -4,6 +4,14 @@ from .models import *
 date_format = '%y-%m-%d %H:%M:%S.%f'
 
 
+class BaseSerializer(serializers.Serializer):
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+
 class UserSerilaizer(serializers.ModelSerializer):
 
     class Meta:
@@ -29,31 +37,19 @@ class PostCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {'postBody': {'write_only': True}}
 
 
-class ReactionSerializer(serializers.Serializer):
+class ReactionSerializer(BaseSerializer):
     count = serializers.IntegerField()
     type = serializers.ListField()
 
-    def update(self, instance, validated_data):
-        pass
 
-    def create(self, validated_data):
-        pass
-
-
-class UserDataSerializer(serializers.Serializer):
+class UserDataSerializer(BaseSerializer):
 
     user_id = serializers.IntegerField()
     name = serializers.CharField()
     profile_pic_url = serializers.CharField()
 
-    def update(self, instance, validated_data):
-        pass
 
-    def create(self, validated_data):
-        pass
-
-
-class ReplySerializer(serializers.Serializer):
+class ReplySerializer(BaseSerializer):
 
     comment_id = serializers.IntegerField()
     commented_at = serializers.DateTimeField(format=date_format)
@@ -61,12 +57,6 @@ class ReplySerializer(serializers.Serializer):
 
     commenter = UserDataSerializer()
     reactions = ReactionSerializer()
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
 
 
 class CommentSerializer(ReplySerializer):
@@ -118,17 +108,17 @@ class CommentReactionSerializer(serializers.ModelSerializer):
         fields = ('id', 'comment', 'reactionType')
 
 
-class IdSerializer(serializers.Serializer):
+class IdSerializer(BaseSerializer):
 
     id = serializers.IntegerField()
 
 
-class CountSerializer(serializers.Serializer):
+class CountSerializer(BaseSerializer):
 
     total_count = serializers.IntegerField()
 
 
-class PostIdSerializer(serializers.Serializer):
+class PostIdSerializer(BaseSerializer):
 
     post_ids = serializers.ListField(allow_empty=True, child=serializers.IntegerField())
 
@@ -138,7 +128,7 @@ class PostReactionSerializer(UserDataSerializer):
     reaction = serializers.CharField()
 
 
-class ReactionMetricSerializer(serializers.Serializer):
+class ReactionMetricSerializer(BaseSerializer):
 
     reactionType = serializers.CharField()
     reaction_count = serializers.IntegerField()
