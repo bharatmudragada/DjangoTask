@@ -1,5 +1,5 @@
 from .models import Post, PostReactions, Comment, CommentReactions
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 import datetime
 from django.db.models import Count, F, Q, Subquery
 from django.core.exceptions import SuspiciousOperation
@@ -108,10 +108,11 @@ def get_post(post_id):
 
 
 def create_post(user_id, post_content):
-    post = Post(user_id=user_id, postBody=post_content, postedTime=datetime.datetime.now())
-    post.save()
-    return post.pk
-
+    try:
+        post = Post.objects.create(user_id=user_id, postBody=post_content, postedTime=datetime.datetime.now())
+        return post.id
+    except Exception as e:
+        raise ValidationError('Somr erroe')
 
 def add_comment(post_id, comment_user_id, comment_text):
     comment = Comment(post_id=post_id, commented_on=None, user_id=comment_user_id, commentText=comment_text)
